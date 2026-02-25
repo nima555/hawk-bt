@@ -8,30 +8,14 @@ import numpy as np
 import logging
 
 from py_engine.runtime.rpc_client import RpcClient
-from py_engine.protocol.codecs import (
-    encode_mat_f64,
-    encode_vec_f64,
-    decode_vec_f64,
-    decode_mat_f64,
-    encode_close_step,
-    decode_vec_mat_f64,
+from py_engine_rust import (
+    decode_vec_f64_py as decode_vec_f64,
+    decode_mat_f64_py as decode_mat_f64,
+    decode_vec_mat_f64_py as decode_vec_mat_f64,
+    encode_vec_f64_py as encode_vec_f64,
+    encode_mat_f64_py as encode_mat_f64,
+    encode_close_step_py as encode_close_step,
 )
-try:
-    from py_engine_rust import (
-        decode_vec_f64_py as rust_decode_vec_f64,
-        decode_mat_f64_py as rust_decode_mat_f64,
-        decode_vec_mat_f64_py as rust_decode_vec_mat_f64,
-        encode_vec_f64_py as rust_encode_vec_f64,
-        encode_mat_f64_py as rust_encode_mat_f64,
-        encode_close_step_py as rust_encode_close_step,
-    )
-except Exception:  # pragma: no cover - optional
-    rust_decode_vec_f64 = None
-    rust_decode_mat_f64 = None
-    rust_decode_vec_mat_f64 = None
-    rust_encode_vec_f64 = None
-    rust_encode_mat_f64 = None
-    rust_encode_close_step = None
 
 logger = logging.getLogger(__name__)
 
@@ -135,11 +119,6 @@ class EngineAPI:
             raise ValueError(f"ohlc5 must be shape (N,5), got {ohlc5.shape}")
 
         payload = encode_mat_f64(ohlc5)
-        if rust_encode_mat_f64:
-            try:
-                payload = rust_encode_mat_f64(ohlc5)
-            except Exception:
-                payload = encode_mat_f64(ohlc5)
         _ = await self._rpc.send_run_and_wait(FN.INIT, payload, timeout=timeout)
         return None
 
@@ -149,28 +128,16 @@ class EngineAPI:
 
     async def step_next_affect_statics(self, timeout: float = 10.0) -> tuple[np.ndarray, Statics]:
         payload = await self._rpc.send_run_and_wait(FN.STEP_NEXT_AFFECT_STATICS, b"", timeout=timeout)
-        if rust_decode_vec_mat_f64:
-            try:
-                vec, mat = rust_decode_vec_mat_f64(payload)
-                vec = np.asarray(vec)
-                mat = np.asarray(mat)
-            except Exception:
-                vec, mat = decode_vec_mat_f64(payload)
-        else:
-            vec, mat = decode_vec_mat_f64(payload)
+        vec, mat = decode_vec_mat_f64(payload)
+        vec = np.asarray(vec)
+        mat = np.asarray(mat)
         if mat.ndim != 2 or mat.shape[1] != 5:
             raise ValueError(f"STEP_NEXT_AFFECT_STATICS expected (N,5), got {mat.shape}")
         return mat, Statics.from_vec14(np.asarray(vec, dtype=np.float64))
 
     async def get_statics_raw(self, timeout: float = 10.0) -> np.ndarray:
         payload = await self._rpc.send_run_and_wait(FN.GET_STATICS, b"", timeout=timeout)
-        if rust_decode_vec_f64:
-            try:
-                vec = np.asarray(rust_decode_vec_f64(payload))
-            except Exception:
-                vec = decode_vec_f64(payload)
-        else:
-            vec = decode_vec_f64(payload)
+        vec = decode_vec_f64(payload)
         # 現行は current_time_ms を含めた 20 要素を想定。古いWASMでも落ちないように許容範囲を広げる
         if vec.size < 14:
             raise ValueError(f"GET_STATICS expected >=14 floats, got {vec.size}")
@@ -209,13 +176,7 @@ class EngineAPI:
         """
         payload = await self._rpc.send_run_and_wait(FN.GET_TICKET_LIST, b"", timeout=timeout)
 
-        if rust_decode_mat_f64:
-            try:
-                decoded = rust_decode_mat_f64(payload)
-            except Exception:
-                decoded = decode_mat_f64(payload)
-        else:
-            decoded = decode_mat_f64(payload)
+        decoded = decode_mat_f64(payload)
         # decode_mat_f64 の実装差異に耐える
         # - (rows, cols, ndarray) を返す場合
         # - ndarray を返す場合
@@ -300,13 +261,7 @@ class EngineAPI:
             if np.any(actions < 0):
                 raise ValueError("actions must be >= 0")
 
-        if rust_encode_close_step:
-            try:
-                payload = rust_encode_close_step(flags, actions, ratios)
-            except Exception:
-                payload = encode_close_step(flags, actions, ratios)
-        else:
-            payload = encode_close_step(flags, actions, ratios)
+        payload = encode_close_step(flags, actions, ratios)
 
         # ★ここは既存のRPC呼び出し関数名に合わせて1行だけ調整
         raw = await self._rpc.send_run_and_wait(FN.CLOSE_STEP, payload, timeout=timeout)
@@ -406,13 +361,7 @@ class EngineAPI:
         actions[12] = float(time_limits)             if time_limits     is not None else 0.0
 
         # --- call WASM directly (no dependency on step_make_token method) ---
-        payload = encode_vec_f64(actions)
-        if rust_encode_vec_f64:
-            try:
-                payload = rust_encode_vec_f64(actions)
-            except Exception:
-                payload = encode_vec_f64(actions)
-        payload = bytes(payload)
+        payload = bytes(encode_vec_f64(actions))
         raw = await self._rpc.send_run_and_wait(FN.STEP_MAKE_TOKEN, payload, timeout=timeout)
         out = decode_vec_f64(raw)
 
@@ -483,13 +432,7 @@ class EngineAPI:
         actions[7] = _pips_to_slot(stop_order_pips) if stop_order_pips is not None else 0.0
         actions[8] = _pips_to_slot(trail_pips)      if trail_pips      is not None else 0.0
 
-        payload = encode_vec_f64(actions)
-        if rust_encode_vec_f64:
-            try:
-                payload = rust_encode_vec_f64(actions)
-            except Exception:
-                payload = encode_vec_f64(actions)
-        payload = bytes(payload)
+        payload = bytes(encode_vec_f64(actions))
         raw = await self._rpc.send_run_and_wait(FN.STEP_MAKE_TICKET, payload, timeout=timeout)
         out = decode_vec_f64(raw)
 

@@ -11,6 +11,7 @@ requires-python = ">=3.10"
 dependencies = [
   "numpy>=1.23",
   "websockets>=11",
+  "py-engine-rust",
 ]
 
 [tool.setuptools]
