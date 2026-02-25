@@ -1,0 +1,31 @@
+[package]
+name = "py_engine_rust"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+readme = false
+
+[lib]
+name = "py_engine_rust"
+crate-type = ["cdylib"]
+
+[dependencies]
+pyo3 = { version = "0.20", features = ["extension-module", "abi3-py310"] }
+thiserror = "1.0"
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "sync", "time", "net"] }
+tokio-tungstenite = { version = "0.21", default-features = true }
+futures = "0.3"
+futures-util = "0.3"
+numpy = "0.20"
+pyo3-asyncio = { version = "0.20", features = ["tokio-runtime"] }
+
+[features]
+default = []
+
+[profile.release]
+codegen-units = 1
+lto = "fat"
+strip = "symbols"
+opt-level = 3
+panic = "abort"
+debug = false
