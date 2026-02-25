@@ -13,15 +13,14 @@ py_engine (Python)
 ```
 
 - **WASM エンジン**: 為替シミュレーションの本体。ブラウザ内で動作する
-- **py_engine**: Python 側のクライアント。戦略ロジックの実行、RPC 通信、状態管理を担当
-- **py_engine_rust**: バイナリコーデック（encode/decode）と高速 WS サーバの Rust 実装。必須依存
+- **py_engine**: Python 側のクライアント。戦略ロジックの実行、状態管理を担当
+- **py_engine_rust**: WS 通信・バイナリコーデック・RPC を一貫処理する Rust 実装。必須依存
 
 ## Requirements
 
 - Python >= 3.10
 - `py-engine-rust` (Rust extension, **必須**)
 - `numpy >= 1.23`
-- `websockets >= 11`
 
 ```bash
 pip install -e .
@@ -32,8 +31,7 @@ pip install -e .
 ```python
 import asyncio
 from py_engine.runtime.rust_engine_async_adapter import RustEngineAsyncAdapter
-from py_engine.runtime.engine_api import EngineAPI, BoundEngine
-from py_engine.runtime.loop import run_attached, create_progress_printer
+from py_engine.runtime.loop import run_attached
 from py_engine.strategy.api import Strategy, Context
 
 class MyStrategy(Strategy):
@@ -168,28 +166,14 @@ result.final_assets()     # 最終資産
 result.max_drawdown()     # 最大ドローダウン (負の値)
 ```
 
-### 5. 接続バックエンド
-
-3つの接続方式から選べる:
-
-| 方式 | 速度 | 用途 |
-|------|------|------|
-| `RustEngineAsyncAdapter` | 最速 | 推奨。Rust で WS + RPC + codec を一貫処理 |
-| `RustWsServerRpc` + `EngineAPI` | 速い | Rust WS サーバ + Python RPC 層 |
-| `WsServer` + `RpcClient` + `EngineAPI` | 標準 | Full Python。トークン認証・Origin 検証あり |
+### 5. 接続
 
 ```python
-# 推奨: RustEngineAsyncAdapter
+from py_engine.runtime.rust_engine_async_adapter import RustEngineAsyncAdapter
+
 engine = RustEngineAsyncAdapter(host="127.0.0.1", port=8787)
 await engine.start()
 await engine.wait_connected()
-
-# Python WS Server
-server = WsServer(host="127.0.0.1", port=8787, token=WsServer.generate_token())
-await server.start()
-ws = await server.wait_connected()
-rpc = RpcClient(ws)
-engine = EngineAPI(rpc)
 ```
 
 ### 6. Gate Policy
@@ -214,7 +198,6 @@ result = await run_attached(engine, strategy, gate_policy=gate_policy)
 - ステップループの制御（`run_attached` / `run_backtest`）
 - 状態の自動同期（`BoundEngine` が `affect` → `get_statics` を自動実行）
 - 終端検出（破産 `GAME_BREAK` / 終了 `GAME_END`）
-- 入力バリデーション（side/order/units/ratios の型・範囲チェック）
 - 進捗表示（`create_progress_printer`）
 
 ### ユーザーが担当すること
@@ -246,15 +229,10 @@ result = await run_attached(engine, strategy, gate_policy=gate_policy)
 ```
 py_engine/
 ├── src/py_engine/
-│   ├── protocol/
-│   │   └── wire.py          # バイナリプロトコル定数・pack/unpack
 │   ├── runtime/
-│   │   ├── engine_api.py     # EngineAPI, BoundEngine, Statics, FN
+│   │   ├── engine_api.py     # Statics, BoundEngine
 │   │   ├── loop.py           # run_backtest, run_attached, BacktestResult
-│   │   ├── rpc_client.py     # RpcClient (Python WS用)
-│   │   ├── ws_server.py      # WsServer (Python WS用, Origin/Token認証)
-│   │   ├── rust_ws_server.py # RustWsServerRpc (Rust WSサーバラッパ)
-│   │   ├── rust_engine_async_adapter.py  # RustEngineAsyncAdapter (推奨)
+│   │   ├── rust_engine_async_adapter.py  # RustEngineAsyncAdapter (エンジン本体)
 │   │   └── progress.py       # 進捗バー
 │   ├── strategy/
 │   │   └── api.py            # Strategy, Context, EngineState, Engine protocol

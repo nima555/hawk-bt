@@ -5,7 +5,7 @@ from typing import Optional, Callable
 
 import numpy as np
 
-from py_engine.runtime.engine_api import EngineAPI, Statics, BoundEngine
+from py_engine.runtime.engine_api import Statics, BoundEngine
 from py_engine.strategy.api import Strategy, Context, EngineState
 from .progress import create_progress_printer
 import logging
@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 # Main loop
 # -------------------------
 async def run_backtest(
-    engine: EngineAPI,
+    engine,
     strategy: Strategy,
     ohlc5: np.ndarray,
     *,
@@ -120,7 +120,7 @@ ProgressCallback = Callable[[int, Optional[int]], None]
 
 
 async def run_attached(
-    engine: EngineAPI,
+    engine,
     strategy: Strategy,
     *,
     steps: Optional[int] = None,

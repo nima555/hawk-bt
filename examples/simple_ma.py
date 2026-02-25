@@ -10,19 +10,12 @@ SRC = ROOT / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
-from py_engine.runtime.ws_server import WsServer
-from py_engine.runtime.rpc_client import RpcClient
-from py_engine.runtime.engine_api import EngineAPI
 from py_engine.runtime.loop import run_attached, create_progress_printer
 from py_engine.strategy.api import Strategy, Context
-from py_engine.runtime.rust_ws_server import RustWsServerRpc
 from py_engine.runtime.rust_engine_async_adapter import RustEngineAsyncAdapter
 
-# ===== Toggle: choose Rust or Python backend here =====
-USE_RUST_ENGINE_ASYNC = True  # True: use RustEngineAsyncAdapter
-USE_RUST_WS_SERVER = False      # Fallback: Rust WS server + Python EngineAPI
-RUST_WS_HOST = "127.0.0.1"
-RUST_WS_PORT = 8787
+WS_HOST = "127.0.0.1"
+WS_PORT = 8787
 
 
 class MultiOrderStrategy(Strategy):
@@ -318,72 +311,18 @@ async def wait_for_disconnect(engine, poll_interval: float = 0.5) -> None:
 
 
 async def main():
-    """
-    デフォルト: PythonのWSサーバ + Python RPCクライアント。
-    USE_RUST_ENGINE_ASYNC=True なら RustEngineAsyncAdapter (py_engine_rust) を直接使う。
-    それ以外で USE_RUST_WS_SERVER=True にすると Rust WS サーバを起動し、
-    ブラウザ接続後は Rust サーバ経由で RPC を流す。
-    """
-    if USE_RUST_ENGINE_ASYNC:
-        print(f"[py] using RustEngineAsync on ws://{RUST_WS_HOST}:{RUST_WS_PORT}")
-        engine = RustEngineAsyncAdapter(host=RUST_WS_HOST, port=RUST_WS_PORT, start_seq=1)
-        await engine.start()
-        while True:
-            print("[py] waiting browser connection...")
-            await engine.wait_connected(timeout=None)
-            print("[py] browser connected")
-            try:
-                await run_simulation(engine)
-            except Exception as e:
-                print(f"[py] simulation error: {e}")
-            await wait_for_disconnect(engine)
-
-    if USE_RUST_WS_SERVER:
-        print(f"[py] starting Rust WS server on ws://{RUST_WS_HOST}:{RUST_WS_PORT}")
-
-        rpc = RustWsServerRpc(host=RUST_WS_HOST, port=RUST_WS_PORT, start_seq=1)
-        await rpc.start()
-        while True:
-            print("[py] waiting browser connection (Rust server)...")
-            await rpc.wait_connected(timeout=None)
-            print("[py] browser connected")
-
-            engine = EngineAPI(rpc)
-            print("[py] EngineAPI using Rust WS server backend")
-            try:
-                await run_simulation(engine)
-            except Exception as e:
-                print(f"[py] simulation error: {e}")
-            await wait_for_disconnect(engine)
-
-    # トークン認証を有効にする場合（任意）:
-    #   token = WsServer.generate_token()
-    #   server = WsServer(..., token=token)
-    # → コンソールにトークンが表示される。UIの WS Token 欄に入力して接続。
-    server = WsServer(host="127.0.0.1", port=8787, metadata={"strategy_name": "SimpleMAStrategy"})
-    await server.start()
-    print(f"[py] listening ws://{server.host}:{server.port}")
-
+    print(f"[py] using RustEngineAsync on ws://{WS_HOST}:{WS_PORT}")
+    engine = RustEngineAsyncAdapter(host=WS_HOST, port=WS_PORT, start_seq=1)
+    await engine.start()
     while True:
         print("[py] waiting browser connection...")
-        ws = await server.wait_connected(timeout=None)
+        await engine.wait_connected(timeout=None)
         print("[py] browser connected")
-
-        rpc = RpcClient(ws, start_seq=1)
-        engine = EngineAPI(rpc)
-        print("[py] EngineAPI using Python WS server backend")
-
         try:
             await run_simulation(engine)
         except Exception as e:
             print(f"[py] simulation error: {e}")
-
-        print("[py] waiting for disconnect before next run...")
-        try:
-            await ws.wait_closed()
-        except Exception:
-            pass
-        print("[py] disconnected. ready for next connection.\n")
+        await wait_for_disconnect(engine)
 
 
 if __name__ == "__main__":
