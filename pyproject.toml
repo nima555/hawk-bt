@@ -3,14 +3,14 @@ requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "hawk-backtester"
-version = "0.1.0"
+name = "hawk-bt"
+version = "0.1.1"
 description = "Python client library for Hawk-Backtester — local strategy backtesting via WS <-> WASM simulator"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
   "numpy>=1.23",
-  "py-engine-rust",
+  "hawk-bt-rust-engine",
 ]
 
 [tool.setuptools]
