@@ -4,7 +4,7 @@ build-backend = "maturin"
 
 [project]
 name = "hawk-bt-rust-engine"
-version = "0.1.0"
+version = "0.1.1"
 description = "Rust-based WS/RPC engine for hawk-bt (Hawk-Backtester)"
 requires-python = ">=3.10"
 
