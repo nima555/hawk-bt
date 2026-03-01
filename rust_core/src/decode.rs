@@ -17,7 +17,7 @@ pub fn decode_vec_f64_py(py: Python<'_>, payload: &[u8]) -> PyResult<PyObject> {
 #[pyfunction]
 pub fn decode_mat_f64_py(py: Python<'_>, payload: &[u8]) -> PyResult<PyObject> {
     let (_rows, cols, data) = codec::decode_mat_f64(payload)?;
-    // PyArray2::from_vec2 は追加コピーが入るが、APIが安定している方法を使う
+    // PyArray2::from_vec2 involves an extra copy but provides a stable API
     let rows_vec: Vec<Vec<f64>> = data.chunks(cols as usize).map(|c| c.to_vec()).collect();
     let arr = PyArray2::from_vec2(py, &rows_vec)
         .map_err(|e| RustError::Decode(format!("reshape failed: {e}")))?;

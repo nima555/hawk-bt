@@ -155,14 +155,14 @@ py_engineは、トレーディングシミュレータ（WASM）と連携し、P
 | 8 | tickets_num | int | オープンTicket数 | 0 〜 ticket_limits |
 | 9 | ticket_all_num | int | 累計Ticket数 | ≥ 0 |
 | 10 | count | int | ステップカウンタ | 0 〜 total_steps |
-| 11 | benefit_buy | float | BUYポジション含み損益 | 任意の値 |
-| 12 | benefit_sell | float | SELLポジション含み損益 | 任意の値 |
-| 13 | unit_buy | float | BUYポジション総数量 | ≥ 0 |
-| 14 | unit_sell | float | SELLポジション総数量 | ≥ 0 |
-| 15 | ticket_buy_count | int | BUYチケット数 | 0 〜 tickets_num |
-| 16 | ticket_sell_count | int | SELLチケット数 | 0 〜 tickets_num |
-| 17 | token_buy_count | int | BUYトークン数 | 0 〜 token_num |
-| 18 | token_sell_count | int | SELLトークン数 | 0 〜 token_num |
+| 11 | benefit_long | float | ロングポジション含み損益 | 任意の値 |
+| 12 | benefit_short | float | ショートポジション含み損益 | 任意の値 |
+| 13 | unit_long | float | ロングポジション総数量 | ≥ 0 |
+| 14 | unit_short | float | ショートポジション総数量 | ≥ 0 |
+| 15 | ticket_long_count | int | ロングチケット数 | 0 〜 tickets_num |
+| 16 | ticket_short_count | int | ショートチケット数 | 0 〜 tickets_num |
+| 17 | token_long_count | int | ロングトークン数 | 0 〜 token_num |
+| 18 | token_short_count | int | ショートトークン数 | 0 〜 token_num |
 | 19 | total_steps | int | 総ステップ数 | N（データ行数） |
 
 #### F-021: ポジション一覧取得

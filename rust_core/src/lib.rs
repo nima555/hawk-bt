@@ -19,6 +19,5 @@ fn py_engine_rust(_py: Python<'_>, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(encode::encode_vec_f64_py, m)?)?;
     m.add_function(wrap_pyfunction!(encode::encode_mat_f64_py, m)?)?;
     m.add_function(wrap_pyfunction!(encode::encode_close_step_py, m)?)?;
-    m.add_function(wrap_pyfunction!(engine::run_batch_placeholder, m)?)?;
     Ok(())
 }

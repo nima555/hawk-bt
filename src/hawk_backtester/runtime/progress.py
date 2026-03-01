@@ -6,15 +6,14 @@ from typing import Optional, Callable
 
 
 def create_progress_printer() -> Callable[[int, Optional[int]], None]:
-    """
-    シンプルな進捗プリンタ。
+    """Create a terminal progress bar callback.
 
-    戻り値の関数に (done, total) を渡すと、ターミナルに進捗バーを描画する。
-    total が None / 0 以下の場合は何もしない。
+    Returns a callable ``(done, total) -> None`` that draws an animated
+    progress bar to stdout.  Does nothing when *total* is ``None`` or <= 0.
     """
-    spinner = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
-    color_filled = "\033[38;5;39m"  # cyan-ish
-    color_border = "\033[38;5;244m"
+    spinner = ["\u28cb", "\u28d9", "\u28f9", "\u28f8", "\u28fc", "\u28f4", "\u28e6", "\u28e7", "\u28c7", "\u28cf"]
+    color_filled = "\033[38;5;39m"   # cyan
+    color_border = "\033[38;5;244m"  # gray
     color_reset = "\033[0m"
     start = time.perf_counter()
     state = {"index": 0}
@@ -34,8 +33,8 @@ def create_progress_printer() -> Callable[[int, Optional[int]], None]:
         cols = shutil.get_terminal_size((80, 20)).columns
         bar_len = max(10, cols - 40)
         filled = int(bar_len * ratio)
-        filled_segment = "━" * filled
-        empty_segment = "━" * (bar_len - filled)
+        filled_segment = "\u2501" * filled
+        empty_segment = "\u2501" * (bar_len - filled)
         bar = (
             f"{color_filled}{filled_segment}{color_reset}"
             f"{color_border}{empty_segment}{color_reset}"
@@ -47,7 +46,7 @@ def create_progress_printer() -> Callable[[int, Optional[int]], None]:
         state["index"] += 1
         line = (
             f"\r{spinner_char} {color_border}[{color_reset}{bar}{color_border}]{color_reset} {pct:6.2f}% "
-            f"{done:>7}/{total:<7} eta { _human_time(eta) }"
+            f"{done:>7}/{total:<7} eta {_human_time(eta)}"
         )
         print(line, end="", flush=True)
         if done >= total:

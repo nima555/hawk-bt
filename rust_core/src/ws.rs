@@ -4,8 +4,10 @@ use std::time::Duration;
 use tokio::net::{TcpListener, TcpStream};
 use tokio::sync::{Mutex, Notify};
 use tokio::time::timeout;
-use tokio_tungstenite::accept_async;
+use tokio_tungstenite::accept_hdr_async;
 use tokio_tungstenite::tungstenite::protocol::Message as WsMsg;
+use tokio_tungstenite::tungstenite::handshake::server::{Request, Response, ErrorResponse};
+use tokio_tungstenite::tungstenite::http::StatusCode;
 use futures_util::{SinkExt, StreamExt};
 
 use crate::errors::{RpcError, RpcTransportError, RustError};
@@ -13,6 +15,15 @@ use crate::wire;
 
 /// Library version (sync with Cargo.toml)
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
+
+/// Allowed Origin prefixes for WebSocket connections.
+const ALLOWED_ORIGINS: &[&str] = &[
+    "http://127.0.0.1",
+    "http://localhost",
+    "https://127.0.0.1",
+    "https://localhost",
+    "https://www2.kisshi-lab.com",
+];
 
 type WsStream = tokio_tungstenite::WebSocketStream<TcpStream>;
 
@@ -56,7 +67,23 @@ impl WsServer {
         tokio::spawn(async move {
             loop {
                 match listener.accept().await {
-                    Ok((stream, _)) => match accept_async(stream).await {
+                    Ok((stream, _)) => {
+                        let origin_check = |req: &Request, resp: Response| -> Result<Response, ErrorResponse> {
+                            let origin = req.headers()
+                                .get("origin")
+                                .and_then(|v| v.to_str().ok())
+                                .unwrap_or("")
+                                .trim_end_matches('/');
+                            if origin.is_empty() || ALLOWED_ORIGINS.iter().any(|ao| origin.starts_with(ao)) {
+                                Ok(resp)
+                            } else {
+                                eprintln!("[rust ws server] rejected origin: {origin}");
+                                let mut err = ErrorResponse::new(None);
+                                *err.status_mut() = StatusCode::FORBIDDEN;
+                                Err(err)
+                            }
+                        };
+                        match accept_hdr_async(stream, origin_check).await {
                         Ok(mut conn) => {
                             // Send handshake with version info
                             let handshake = format!(
@@ -74,8 +101,8 @@ impl WsServer {
                             *seq_guard = start_seq;
                             notify.notify_waiters();
                         }
-                        Err(e) => eprintln!("[rust ws server] accept_async failed: {e}"),
-                    },
+                        Err(e) => eprintln!("[rust ws server] accept failed: {e}"),
+                    }},
                     Err(e) => {
                         eprintln!("[rust ws server] accept failed: {e}");
                         continue;

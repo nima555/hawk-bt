@@ -9,20 +9,21 @@ pub const MSG_ERROR: u8 = 3;
 pub const MSG_PING: u8 = 4;
 pub const MSG_PONG: u8 = 5;
 
-// fn IDs (EngineAPI)
-pub const FN_INIT: u16 = 100;
-pub const FN_RESET_EPISODE: u16 = 101;  // RL: Reset to specific episode by index
-pub const FN_GET_RL_CONFIG: u16 = 102;  // RL: Get RL config (seed, etc.) from UI
+// Function IDs (shared with WASM engine — numeric values must not change)
+pub const FN_INIT_CANDLES: u16 = 100;
+pub const FN_RESET_EPISODE: u16 = 101;
+pub const FN_GET_RL_CONFIG: u16 = 102;
 pub const FN_STEP_NEXT: u16 = 2;
-pub const FN_STEP_NEXT_AFFECT_STATICS: u16 = 130;
-pub const FN_GET_STATICS: u16 = 12;
+pub const FN_STEP_AND_SYNC: u16 = 130;
+pub const FN_GET_SNAPSHOT: u16 = 12;
 pub const FN_GET_TICKET_LIST: u16 = 10;
-pub const FN_AFFECT: u16 = 30;
-pub const FN_GAME_END: u16 = 40;
-pub const FN_CLOSE_STEP: u16 = 31;
-pub const FN_STEP_MAKE_TOKEN: u16 = 20;
-pub const FN_STEP_MAKE_TICKET: u16 = 21;
-pub const FN_GET_GATE_POLICY: u16 = 120;
+pub const FN_GET_OHLC: u16 = 15;
+pub const FN_FETCH_EVENTS: u16 = 30;
+pub const FN_END_SESSION: u16 = 40;
+pub const FN_CLOSE_POSITIONS: u16 = 31;
+pub const FN_PLACE_ORDER: u16 = 20;
+pub const FN_PLACE_TICKET: u16 = 21;
+pub const FN_GET_SYNC_POLICY: u16 = 120;
 
 pub const ACTION_REDUCE: i32 = 2;
 

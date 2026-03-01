@@ -165,10 +165,10 @@ Offset  Size  Field
 | 9 | ticket_all_num | float | 全 Ticket 数（クローズ含む） |
 | 10 | count | int | 内部カウンター |
 | 11-14 | ticket_stat_0..3 | float | Ticket 統計 |
-| 15 | ticket_buy_count | float | 買い Ticket 総数 |
-| 16 | ticket_sell_count | float | 売り Ticket 総数 |
-| 17 | token_buy_count | float | 買い Token 総数 |
-| 18 | token_sell_count | float | 売り Token 総数 |
+| 15 | ticket_long_count | float | ロング Ticket 総数 |
+| 16 | ticket_short_count | float | ショート Ticket 総数 |
+| 17 | token_long_count | float | ロング Token 総数 |
+| 18 | token_short_count | float | ショート Token 総数 |
 | 19 | total_steps | int | 総ステップ数 |
 
 ### 3.2 OHLC5 データ形式
