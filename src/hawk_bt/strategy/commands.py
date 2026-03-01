@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Awaitable, Callable
 
-from hawk_backtester.strategy.api import Context
+from hawk_bt.strategy.api import Context
 
 # Convenience type for step functions
 StepFn = Callable[[Context], Awaitable[None]]

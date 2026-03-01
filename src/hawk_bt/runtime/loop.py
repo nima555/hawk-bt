@@ -6,8 +6,8 @@ from typing import Optional, Callable, Union
 
 import numpy as np
 
-from hawk_backtester.runtime.engine_api import Snapshot, Engine
-from hawk_backtester.strategy.api import Strategy, Context, SessionState, Candles
+from hawk_bt.runtime.engine_api import Snapshot, Engine
+from hawk_bt.strategy.api import Strategy, Context, SessionState, Candles
 from .progress import create_progress_printer
 import logging
 

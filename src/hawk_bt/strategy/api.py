@@ -6,7 +6,7 @@ from typing import Any, Dict, Protocol, runtime_checkable
 
 import numpy as np
 
-from hawk_backtester.runtime.engine_api import Snapshot
+from hawk_bt.runtime.engine_api import Snapshot
 
 
 @dataclass

@@ -6,9 +6,9 @@ import threading
 import time
 from typing import Callable, Optional
 
-from hawk_backtester.runtime.rust_engine_async_adapter import RustEngineAsyncAdapter
-from hawk_backtester.runtime.loop import run_attached, BacktestResult
-from hawk_backtester.strategy.api import Strategy
+from hawk_bt.runtime.rust_engine_async_adapter import RustEngineAsyncAdapter
+from hawk_bt.runtime.loop import run_attached, BacktestResult
+from hawk_bt.strategy.api import Strategy
 
 logger = logging.getLogger(__name__)
 

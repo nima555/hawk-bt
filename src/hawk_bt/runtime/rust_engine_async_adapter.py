@@ -34,7 +34,7 @@ class RustEngineAsyncAdapter:
 
     async def step_and_sync(self, timeout: float = 10.0):
         """Step forward and return (events, Snapshot) in one RPC call."""
-        from hawk_backtester.runtime.engine_api import Snapshot
+        from hawk_bt.runtime.engine_api import Snapshot
         events, vec = await self._eng.step_and_sync(timeout)
         events_arr = np.asarray(events)
         vec_arr = np.asarray(vec)
@@ -46,7 +46,7 @@ class RustEngineAsyncAdapter:
 
     async def get_snapshot(self, timeout: float = 10.0):
         """Get current engine state as a Snapshot dataclass."""
-        from hawk_backtester.runtime.engine_api import Snapshot
+        from hawk_bt.runtime.engine_api import Snapshot
         vec = await self.get_snapshot_raw(timeout=timeout)
         return Snapshot.from_raw_vector(vec)
 

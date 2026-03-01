@@ -6,7 +6,7 @@ ATR ベースの動的 TP/SL。
 """
 import numpy as np
 import requests
-from hawk_backtester import Strategy, Context, HawkEngine, configure_logging
+from hawk_bt import Strategy, Context, HawkEngine, configure_logging
 
 # ── 設定 ──
 API = "http://127.0.0.1:8000/v1"

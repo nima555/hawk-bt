@@ -1,9 +1,9 @@
-"""Logging configuration for hawk_backtester."""
+"""Logging configuration for hawk_bt."""
 import logging
 
 
 def configure(verbosity: int = 2) -> None:
-    """Configure hawk_backtester logging verbosity.
+    """Configure hawk_bt logging verbosity.
 
     Args:
         verbosity: 1 = quiet (WARNING only), 2 = normal (INFO), 3 = verbose (DEBUG).
@@ -11,7 +11,7 @@ def configure(verbosity: int = 2) -> None:
     level = {1: logging.WARNING, 2: logging.INFO, 3: logging.DEBUG}.get(
         verbosity, logging.INFO
     )
-    root = logging.getLogger("hawk_backtester")
+    root = logging.getLogger("hawk_bt")
     root.setLevel(level)
     if not root.handlers:
         handler = logging.StreamHandler()

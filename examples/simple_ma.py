@@ -10,7 +10,7 @@ ATR ベースの TP/SL で利確・損切りを管理。
 """
 
 import numpy as np
-from hawk_backtester import Strategy, Context, HawkEngine, configure_logging
+from hawk_bt import Strategy, Context, HawkEngine, configure_logging
 
 
 class MACrossoverStrategy(Strategy):
