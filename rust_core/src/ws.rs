@@ -23,6 +23,7 @@ const ALLOWED_ORIGINS: &[&str] = &[
     "https://127.0.0.1",
     "https://localhost",
     "https://www2.kisshi-lab.com",
+    "https://app.hawk-backtester.com",
 ];
 
 type WsStream = tokio_tungstenite::WebSocketStream<TcpStream>;
