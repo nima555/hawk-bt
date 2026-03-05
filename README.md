@@ -1,25 +1,25 @@
-# py_engine — Hawk Trading Simulator Python Client
+# hawk-bt — Python Client for Hawk-Backtester
 
-ブラウザ上の WASM トレーディングエンジンを Python から操作するクライアントライブラリ。
-自動売買戦略の開発・バックテスト・ライブ検証に使う。
+A Python client library for controlling the browser-based WASM trading engine.
+Build, backtest, and evaluate algorithmic trading strategies programmatically.
 
 ## Architecture
 
 ```
 Browser (WASM Engine + UI)
     ↕  WebSocket (binary, lock-step RPC)
-py_engine (Python)
+hawk-bt (Python)
     ↕  py_engine_rust (Rust extension, required)
 ```
 
-- **WASM エンジン**: 為替シミュレーションの本体。ブラウザ内で動作する
-- **py_engine**: Python 側のクライアント。戦略ロジックの実行、状態管理を担当
-- **py_engine_rust**: WS 通信・バイナリコーデック・RPC を一貫処理する Rust 実装。必須依存
+- **WASM Engine**: The core trading simulation running in the browser
+- **hawk-bt**: Python client handling strategy execution and state management
+- **py_engine_rust**: Rust extension for WebSocket communication, binary codec, and RPC (required dependency)
 
 ## Requirements
 
 - Python >= 3.10
-- `py-engine-rust` (Rust extension, **必須**)
+- `py-engine-rust` (Rust extension, **required**)
 - `numpy >= 1.23`
 
 ```bash
@@ -55,9 +55,9 @@ asyncio.run(main())
 
 ## What You Can Do
 
-### 1. Strategy を書く
+### 1. Write a Strategy
 
-`Strategy` を継承して `step()` を実装するだけ。毎ステップ自動で呼ばれる。
+Subclass `Strategy` and implement `step()`. It is called automatically on every simulation step.
 
 ```python
 class Strategy(ABC):
@@ -65,89 +65,89 @@ class Strategy(ABC):
     async def step(self, ctx: Context) -> None: ...
 ```
 
-`ctx` から得られるもの:
-- `ctx.state.statics` — 現在の資産・価格・ポジション情報 (`Statics`)
-- `ctx.engine` — エンジン操作 (`BoundEngine`)
-- `ctx.state.done` — シミュレーション終了フラグ
-- `ctx.user` — 自由に使える `dict`（状態保持・ログ等）
+Available via `ctx`:
+- `ctx.state.statics` — Current assets, price, and position info (`Statics`)
+- `ctx.engine` — Engine operations (`BoundEngine`)
+- `ctx.state.done` — Simulation completion flag
+- `ctx.user` — Free-use `dict` for state persistence, logging, etc.
 
-### 2. トレード操作
+### 2. Trade Operations
 
-#### 即時エントリー (place_ticket)
+#### Market Entry (place_ticket)
 
 ```python
 out = await ctx.engine.place_ticket(
     side="buy",           # "buy" | "sell"
-    units=100,            # ロット数
-    sub_limit_pips=5.0,   # TP (利確幅、絶対価格差)  ※省略可
-    stop_order_pips=3.0,  # SL (損切幅、絶対価格差)  ※省略可
-    trail_pips=2.0,       # トレーリングストップ     ※省略可
+    units=100,            # lot size
+    sub_limit_pips=5.0,   # TP (absolute price difference, optional)
+    stop_order_pips=3.0,  # SL (absolute price difference, optional)
+    trail_pips=2.0,       # trailing stop (optional)
 )
-# out: shape (14,) — [0]=flag(チケットID), [1..4]=reward系, [5]=current_rate, ...
+# out: shape (14,) — [0]=flag (ticket ID), [1..4]=reward fields, [5]=current_rate, ...
 ```
 
-#### 予約注文 (place_token)
+#### Pending Order (place_token)
 
 ```python
 out = await ctx.engine.place_token(
     side="sell",          # "buy" | "sell"
     order="limit",        # "limit" | "stop"
-    price=90.0,           # 発注価格
+    price=90.0,           # order price
     units=80,
-    sub_limit_pips=8.0,   # TP  ※省略可
-    stop_order_pips=25.0, # SL  ※省略可
-    trail_pips=None,      # トレーリング ※省略可
-    time_limits=240.0,    # 有効時間（ステップ数） ※省略可
+    sub_limit_pips=8.0,   # TP (optional)
+    stop_order_pips=25.0, # SL (optional)
+    trail_pips=None,      # trailing stop (optional)
+    time_limits=240.0,    # expiry in steps (optional)
 )
-# out: shape (18,) — [0]=flag(トークンID), ...
+# out: shape (18,) — [0]=flag (token ID), ...
 ```
 
-#### 決済 (close_step)
+#### Close Position (close_step)
 
 ```python
 events = await ctx.engine.close_step(
-    flags=[ticket_flag],  # 対象チケットのflag(ID)
-    actions=[1],          # 1=全決済, 2=部分決済(REDUCE)
-    ratios=[0.0],         # action=2 のとき決済比率 (0.0〜1.0)
+    flags=[ticket_flag],  # target ticket flag (ID)
+    actions=[1],          # 1=full close, 2=partial close (REDUCE)
+    ratios=[0.0],         # ratio for action=2 (0.0–1.0)
 )
-# events: shape (N, 5) — 決済結果
+# events: shape (N, 5) — close results
 ```
 
-複数チケットの一括決済も可能（配列で渡す）。
+Batch closing of multiple tickets is supported by passing arrays.
 
-### 3. 市場情報の取得
+### 3. Market Data
 
 ```python
-# 最新状態
+# Current state
 statics = await ctx.engine.get_statics()
-statics.assets           # 資産
-statics.virtual_assets   # 含み損益込み資産
-statics.current_rate     # 現在価格
-statics.current_step     # 現在ステップ
-statics.total_steps      # 総ステップ数
-statics.margin_ratio     # 証拠金維持率
-statics.tickets_num      # オープンチケット数
-statics.token_num        # 予約注文数
-# ...他 20 フィールド
+statics.assets           # account balance
+statics.virtual_assets   # balance including unrealized P&L
+statics.current_rate     # current price
+statics.current_step     # current step
+statics.total_steps      # total steps
+statics.margin_ratio     # margin ratio
+statics.tickets_num      # open ticket count
+statics.token_num        # pending order count
+# ... 20+ fields
 
-# チケット一覧
+# Ticket list
 tickets = await ctx.engine.get_ticket_list()
-# shape (rows, cols) — 各行が1チケットの詳細
+# shape (rows, cols) — each row is one ticket's details
 ```
 
-### 4. シミュレーション実行
+### 4. Running Simulations
 
-#### Attached モード（ブラウザ主導）
+#### Attached Mode (browser-driven)
 
-ブラウザ側で OHLC データが投入済みの前提で、Python は戦略の実行だけを行う。
+Runs the strategy against OHLC data already loaded in the browser.
 
 ```python
 result = await run_attached(engine, strategy, gate_policy="eager")
 ```
 
-#### Backtest モード（Python 主導）
+#### Backtest Mode (Python-driven)
 
-Python から OHLC データを送信してバックテストを実行する。
+Sends OHLC data from Python and runs the backtest.
 
 ```python
 result = await run_backtest(engine, strategy, ohlc5, steps=5000)
@@ -158,15 +158,15 @@ result = await run_backtest(engine, strategy, ohlc5, steps=5000)
 #### BacktestResult
 
 ```python
-result.steps              # 実行ステップ数
-result.assets             # np.ndarray — ステップごとの資産推移
-result.virtual_assets     # np.ndarray — 含み損益込み資産推移
-result.price              # np.ndarray — 価格推移
-result.final_assets()     # 最終資産
-result.max_drawdown()     # 最大ドローダウン (負の値)
+result.steps              # number of steps executed
+result.assets             # np.ndarray — asset history per step
+result.virtual_assets     # np.ndarray — asset history including unrealized P&L
+result.price              # np.ndarray — price history
+result.final_assets()     # final account balance
+result.max_drawdown()     # max drawdown (negative value)
 ```
 
-### 5. 接続
+### 5. Connection
 
 ```python
 from py_engine.runtime.rust_engine_async_adapter import RustEngineAsyncAdapter
@@ -178,10 +178,10 @@ await engine.wait_connected()
 
 ### 6. Gate Policy
 
-ステップ内の整合性同期モード。ブラウザ側のUIで設定するか、`get_gate_policy_hint()` で自動取得する。
+Controls intra-step state synchronization. Can be set in the browser UI or auto-detected via `get_gate_policy_hint()`.
 
-- **`eager`** (デフォルト): 毎操作で `affect` + `get_statics` を実行。正確だが遅い
-- **`step_end`**: ステップ終了時のみ同期。高速だが中間状態は古い可能性がある
+- **`eager`** (default): Runs `affect` + `get_statics` after every operation. Accurate but slower.
+- **`step_end`**: Syncs only at step end. Faster but intermediate state may be stale.
 
 ```python
 gate_policy = await engine.get_gate_policy_hint() or "eager"
@@ -190,39 +190,39 @@ result = await run_attached(engine, strategy, gate_policy=gate_policy)
 
 ## Responsibility Split
 
-### py_engine が担当すること
+### hawk-bt handles
 
-- WebSocket 接続管理（サーバ起動、接続待ち、切断検知）
-- バイナリプロトコルの encode/decode（Rust 実装）
-- RPC 通信（送信 → 応答待ち、タイムアウト、エラーハンドリング）
-- ステップループの制御（`run_attached` / `run_backtest`）
-- 状態の自動同期（`BoundEngine` が `affect` → `get_statics` を自動実行）
-- 終端検出（破産 `GAME_BREAK` / 終了 `GAME_END`）
-- 進捗表示（`create_progress_printer`）
+- WebSocket connection management (server startup, connection waiting, disconnect detection)
+- Binary protocol encode/decode (Rust implementation)
+- RPC communication (send → await response, timeout, error handling)
+- Step loop control (`run_attached` / `run_backtest`)
+- Automatic state sync (`BoundEngine` runs `affect` → `get_statics`)
+- Termination detection (margin call `GAME_BREAK` / completion `GAME_END`)
+- Progress display (`create_progress_printer`)
 
-### ユーザーが担当すること
+### You handle
 
-- **戦略ロジック**: いつ・何を・どれだけ売買するかの判断
-- **パラメータ設計**: TP/SL 幅、ロット数、エントリー条件
-- **リスク管理**: 最大ポジション数、証拠金維持率の監視、ドローダウン制限
-- **OHLC データの用意**: backtest モードでは `(N, 5)` の numpy 配列を自分で用意する
-- **結果の分析**: `BacktestResult` の解釈、パフォーマンス評価
-- **ブラウザ側の起動**: WASM エンジンを含むブラウザ UI を事前に開いておく
+- **Strategy logic**: When, what, and how much to trade
+- **Parameter design**: TP/SL levels, lot sizes, entry conditions
+- **Risk management**: Max positions, margin ratio monitoring, drawdown limits
+- **OHLC data preparation**: Provide `(N, 5)` numpy arrays for backtest mode
+- **Result analysis**: Interpret `BacktestResult`, evaluate performance
+- **Browser setup**: Open the browser UI with the WASM engine before connecting
 
-### py_engine がやらないこと
+### hawk-bt does NOT
 
-- 戦略の推奨や最適化
-- リスクの自動制限（ユーザーが `step()` 内で判断する）
-- OHLC データの取得・前処理
-- ブラウザ側の WASM エンジン管理
+- Recommend or optimize strategies
+- Automatically limit risk (you handle this in `step()`)
+- Fetch or preprocess OHLC data
+- Manage the browser-side WASM engine
 
-## TP/SL の仕様
+## TP/SL Behavior
 
-- TP/SL 値は**絶対価格差**（pips やパーセントではない）
-- Buy の場合: TP ヒット = `high >= open_rate + sub_limit_pips`
-- Buy の場合: SL ヒット = `low <= open_rate - stop_order_pips`
-- 同一バーで TP と SL の両方がヒットした場合: **SL が優先**
-- 決済価格はバーの close 価格（正確な TP/SL 水準ではない）
+- TP/SL values are **absolute price differences** (not pips or percentages)
+- Buy TP hit: `high >= open_rate + sub_limit_pips`
+- Buy SL hit: `low <= open_rate - stop_order_pips`
+- When both TP and SL are hit on the same bar: **SL takes priority**
+- Close price is set to the bar's close price (not the exact TP/SL level)
 
 ## Project Structure
 
@@ -232,12 +232,16 @@ py_engine/
 │   ├── runtime/
 │   │   ├── engine_api.py     # Statics, BoundEngine
 │   │   ├── loop.py           # run_backtest, run_attached, BacktestResult
-│   │   ├── rust_engine_async_adapter.py  # RustEngineAsyncAdapter (エンジン本体)
-│   │   └── progress.py       # 進捗バー
+│   │   ├── rust_engine_async_adapter.py  # RustEngineAsyncAdapter
+│   │   └── progress.py       # Progress display
 │   ├── strategy/
 │   │   └── api.py            # Strategy, Context, EngineState, Engine protocol
-│   └── results/              # (拡張用)
+│   └── results/              # (extensible)
 ├── examples/
-│   └── simple_ma.py          # MA クロスオーバー戦略のサンプル
+│   └── simple_ma.py          # MA crossover strategy example
 └── pyproject.toml
 ```
+
+## License
+
+[MIT](LICENSE)
