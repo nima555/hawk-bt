@@ -3,7 +3,7 @@
 A Python client library for controlling the browser-based WASM trading engine.
 Build, backtest, and evaluate algorithmic trading strategies programmatically.
 
-**Hawk-Backtester**: [https://app.hawk-backtester.com](https://app.hawk-backtester.com)
+This library works alongside the [Hawk-Backtester](https://app.hawk-backtester.com) web app — your strategies run locally in Python while the simulation engine runs in the browser via WASM. See the [documentation](https://app.hawk-backtester.com/py-engine/) for detailed usage and setup instructions.
 
 ## Architecture
 
